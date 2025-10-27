@@ -1,15 +1,22 @@
 const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');
+const cors = require('cors');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIO(server);
+const io = socketIO(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  }
+});
 
 let users = [];
 
 io.on('connection', socket => {
-  const name = socket.handshake.query.name;
+  const name = socket.handshake.query.name || 'Anonymous';
+
   if (users.length >= 5) {
     socket.emit('message', 'Chat is full. Try again later.');
     socket.disconnect();
@@ -29,6 +36,9 @@ io.on('connection', socket => {
   });
 });
 
-app.use(express.static(__dirname + '/public'));
+app.get('/', (req, res) => {
+  res.send('Tinyy Chat Backend is running!');
+});
 
-server.listen(3000, () => console.log('Tinyy Chat running on port 3000'));
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
