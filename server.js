@@ -15,30 +15,41 @@ const io = socketIO(server, {
 let users = [];
 
 io.on('connection', socket => {
-  const name = socket.handshake.query.name || 'Anonymous';
+  const name = socket.handshake.query.name;
 
-  if (users.length >= 5) {
-    socket.emit('message', 'Chat is full. Try again later.');
-    socket.disconnect();
-    return;
-  }
-
+  // Add user to list
   users.push({ id: socket.id, name });
-  io.emit('message', `${name} joined the chat.`);
 
-socket.on('message', msg => {
+  // Announce join
   io.emit('message', {
-    sender: name,
-    content: msg
+    sender: 'System',
+    content: `${name} has joined the chat`
   });
-});
 
+  // Handle incoming messages
+  socket.on('message', msg => {
+    io.emit('message', {
+      sender: name,
+      content: msg
+    });
+  });
 
+  // Handle disconnect
   socket.on('disconnect', () => {
     users = users.filter(u => u.id !== socket.id);
-    io.emit('message', `${name} left the chat.`);
+    io.emit('message', {
+      sender: 'System',
+      content: `${name} has left the chat`
+    });
   });
 });
+
+app.get('/', (req, res) => {
+  res.send('Tinyy Chat Backend is running!');
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 app.get('/', (req, res) => {
   res.send('Tinyy Chat Backend is running!');
