@@ -17,21 +17,31 @@ let users = [];
 io.on('connection', socket => {
   const name = socket.handshake.query.name;
 
-  // Add user to list
   users.push({ id: socket.id, name });
 
   // Announce join
   io.emit('message', {
     sender: 'System',
-    content: `${name} has joined the chat`
+    content: `${name} has joined the chat`,
+    timestamp: new Date().toISOString()
   });
 
   // Handle incoming messages
   socket.on('message', msg => {
     io.emit('message', {
       sender: name,
-      content: msg
+      content: msg,
+      timestamp: new Date().toISOString()
     });
+  });
+
+  // Typing indicators
+  socket.on('typing', () => {
+    socket.broadcast.emit('typing', { sender: name });
+  });
+
+  socket.on('stopTyping', () => {
+    socket.broadcast.emit('stopTyping', { sender: name });
   });
 
   // Handle disconnect
@@ -39,7 +49,8 @@ io.on('connection', socket => {
     users = users.filter(u => u.id !== socket.id);
     io.emit('message', {
       sender: 'System',
-      content: `${name} has left the chat`
+      content: `${name} has left the chat`,
+      timestamp: new Date().toISOString()
     });
   });
 });
